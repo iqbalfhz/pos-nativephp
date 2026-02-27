@@ -60,12 +60,53 @@ class DashboardController extends Controller
         $salesChart = Transaction::where('created_at', '>=', $weekAgo)
             ->where('payment_status', 'paid')
             ->select(
-                DB::raw('DATE(created_at) as date'),
+                DB::raw("strftime('%Y-%m-%d', created_at) as date"),
                 DB::raw('SUM(total) as total'),
                 DB::raw('COUNT(*) as count')
             )
             ->groupBy('date')
             ->orderBy('date')
+            ->get();
+        
+        // Kategori terlaris (7 hari terakhir)
+        $topCategories = DB::table('transaction_items')
+            ->select(
+                'p.category_id',
+                'c.name',
+                DB::raw('SUM(transaction_items.total) as revenue'),
+                DB::raw('SUM(transaction_items.qty) as total_sold')
+            )
+            ->join('products as p', 'transaction_items.product_id', '=', 'p.id')
+            ->join('categories as c', 'p.category_id', '=', 'c.id')
+            ->join('transactions as t', 'transaction_items.transaction_id', '=', 't.id')
+            ->where('t.created_at', '>=', $weekAgo)
+            ->where('t.payment_status', 'paid')
+            ->groupBy('p.category_id', 'c.name')
+            ->orderByDesc('revenue')
+            ->limit(5)
+            ->get();
+        
+        // Payment method distribution (7 hari terakhir)
+        $paymentDistribution = Transaction::where('created_at', '>=', $weekAgo)
+            ->where('payment_status', 'paid')
+            ->select(
+                'payment_method_id',
+                DB::raw('COUNT(*) as count'),
+                DB::raw('SUM(total) as total')
+            )
+            ->with('paymentMethod:id,name')
+            ->groupBy('payment_method_id')
+            ->get();
+        
+        // Monthly sales comparison (last 12 months)
+        $monthlyChart = Transaction::where('created_at', '>=', now()->subMonths(12)->startOfMonth())
+            ->where('payment_status', 'paid')
+            ->select(
+                DB::raw("strftime('%Y-%m', created_at) as month"),
+                DB::raw('SUM(total) as total')
+            )
+            ->groupBy('month')
+            ->orderBy('month')
             ->get();
         
         // Total produk dan kategori
@@ -83,7 +124,10 @@ class DashboardController extends Controller
             ],
             'low_stock_products' => $lowStockProducts,
             'top_products' => $topProducts,
+            'top_categories' => $topCategories,
+            'payment_distribution' => $paymentDistribution,
             'sales_chart' => $salesChart,
+            'monthly_chart' => $monthlyChart,
         ]);
     }
 }

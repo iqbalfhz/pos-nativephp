@@ -63,9 +63,9 @@ Route::middleware(['auth', 'activity.log'])->group(function () {
 
     Route::middleware('permission:view-reports')->group(function () {
         Route::get('/reports/sales', [ReportController::class, 'sales'])->name('reports.sales');
-        Route::get('/reports/sales/{transaction}', [ReportController::class, 'show'])->name('reports.show');
         Route::get('/reports/sales/excel', [ReportController::class, 'exportSalesExcel'])->name('reports.sales.excel');
         Route::get('/reports/sales/pdf', [ReportController::class, 'exportSalesPdf'])->name('reports.sales.pdf');
+        Route::get('/reports/sales/{transaction}', [ReportController::class, 'show'])->name('reports.show');
         Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
     });
 

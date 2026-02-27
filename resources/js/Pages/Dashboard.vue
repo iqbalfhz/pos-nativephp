@@ -1,14 +1,20 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, Link } from "@inertiajs/vue3";
-import { computed } from "vue";
+import { computed, onMounted, ref } from "vue";
+import Chart from "chart.js/auto";
 
 const props = defineProps({
     stats: Object,
     low_stock_products: Array,
     top_products: Array,
+    top_categories: Array,
+    payment_distribution: Array,
     sales_chart: Array,
+    monthly_chart: Array,
 });
+
+const chartInstances = ref({});
 
 const formatCurrency = (value) => {
     return new Intl.NumberFormat("id-ID", {
@@ -25,6 +31,14 @@ const formatDate = (dateString) => {
     });
 };
 
+const formatMonth = (monthString) => {
+    const [year, month] = monthString.split("-");
+    return new Date(year, month - 1).toLocaleDateString("id-ID", {
+        month: "short",
+        year: "numeric",
+    });
+};
+
 const chartLabels = computed(() => {
     return props.sales_chart.map((item) => formatDate(item.date));
 });
@@ -33,8 +47,211 @@ const chartData = computed(() => {
     return props.sales_chart.map((item) => item.total);
 });
 
-const maxChartValue = computed(() => {
-    return Math.max(...chartData.value, 1);
+const monthlyLabels = computed(() => {
+    return props.monthly_chart.map((item) => formatMonth(item.month));
+});
+
+const monthlyData = computed(() => {
+    return props.monthly_chart.map((item) => item.total);
+});
+
+const categoryLabels = computed(() => {
+    return props.top_categories.map((item) => item.name);
+});
+
+const categoryData = computed(() => {
+    return props.top_categories.map((item) => item.revenue);
+});
+
+const paymentLabels = computed(() => {
+    return props.payment_distribution.map(
+        (item) => item.payment_method?.name || "Cash",
+    );
+});
+
+const paymentData = computed(() => {
+    return props.payment_distribution.map((item) => item.count);
+});
+
+const formatChartValue = (value) => {
+    if (value >= 1000000) {
+        return "Rp " + (value / 1000000).toFixed(1) + "M";
+    } else if (value >= 1000) {
+        return "Rp " + (value / 1000).toFixed(0) + "K";
+    } else {
+        return "Rp " + value.toFixed(0);
+    }
+};
+
+const initSalesChart = () => {
+    const ctx = document.getElementById("salesChart");
+    if (ctx && !chartInstances.value.salesChart) {
+        chartInstances.value.salesChart = new Chart(ctx, {
+            type: "line",
+            data: {
+                labels: chartLabels.value,
+                datasets: [
+                    {
+                        label: "Penjualan",
+                        data: chartData.value,
+                        borderColor: "#3b82f6",
+                        backgroundColor: "rgba(59, 130, 246, 0.1)",
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 5,
+                        pointBackgroundColor: "#3b82f6",
+                        pointBorderColor: "#fff",
+                        pointBorderWidth: 2,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            font: { size: 12 },
+                        },
+                    },
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: (value) => formatChartValue(value),
+                        },
+                    },
+                },
+            },
+        });
+    }
+};
+
+const initMonthlyChart = () => {
+    const ctx = document.getElementById("monthlyChart");
+    if (ctx && !chartInstances.value.monthlyChart) {
+        chartInstances.value.monthlyChart = new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: monthlyLabels.value,
+                datasets: [
+                    {
+                        label: "Penjualan Bulanan",
+                        data: monthlyData.value,
+                        backgroundColor: "#10b981",
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                    },
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: (value) => formatChartValue(value),
+                        },
+                    },
+                },
+            },
+        });
+    }
+};
+
+const initCategoryChart = () => {
+    const ctx = document.getElementById("categoryChart");
+    if (ctx && !chartInstances.value.categoryChart) {
+        chartInstances.value.categoryChart = new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: categoryLabels.value,
+                datasets: [
+                    {
+                        label: "Revenue per Kategori",
+                        data: categoryData.value,
+                        backgroundColor: [
+                            "#f59e0b",
+                            "#8b5cf6",
+                            "#ec4899",
+                            "#06b6d4",
+                            "#14b8a6",
+                        ],
+                    },
+                ],
+            },
+            options: {
+                indexAxis: "y",
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                    },
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: (value) => formatChartValue(value),
+                        },
+                    },
+                },
+            },
+        });
+    }
+};
+
+const initPaymentChart = () => {
+    const ctx = document.getElementById("paymentChart");
+    if (ctx && !chartInstances.value.paymentChart) {
+        chartInstances.value.paymentChart = new Chart(ctx, {
+            type: "doughnut",
+            data: {
+                labels: paymentLabels.value,
+                datasets: [
+                    {
+                        data: paymentData.value,
+                        backgroundColor: [
+                            "#3b82f6",
+                            "#10b981",
+                            "#f59e0b",
+                            "#ef4444",
+                            "#8b5cf6",
+                        ],
+                        borderColor: "#fff",
+                        borderWidth: 2,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: "bottom",
+                        labels: {
+                            font: { size: 12 },
+                        },
+                    },
+                },
+            },
+        });
+    }
+};
+
+onMounted(() => {
+    initSalesChart();
+    initMonthlyChart();
+    initCategoryChart();
+    initPaymentChart();
 });
 </script>
 
@@ -253,54 +470,58 @@ const maxChartValue = computed(() => {
                     </div>
                 </div>
 
-                <!-- Charts & Tables Row -->
+                <!-- Charts Row 1 -->
                 <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
-                    <!-- Sales Chart -->
+                    <!-- Sales Chart (7 Days) -->
                     <div class="bg-white shadow rounded-lg p-6">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">
-                            Grafik Penjualan (7 Hari Terakhir)
+                            📊 Penjualan 7 Hari Terakhir
                         </h3>
-                        <div class="space-y-3">
-                            <div
-                                v-for="(value, index) in chartData"
-                                :key="index"
-                                class="flex items-center"
-                            >
-                                <div class="w-20 text-sm text-gray-600">
-                                    {{ chartLabels[index] }}
-                                </div>
-                                <div class="flex-1 ml-3">
-                                    <div class="flex items-center">
-                                        <div
-                                            class="h-6 bg-blue-500 rounded"
-                                            :style="{
-                                                width:
-                                                    (value / maxChartValue) *
-                                                        100 +
-                                                    '%',
-                                            }"
-                                        ></div>
-                                        <span
-                                            class="ml-2 text-sm font-medium text-gray-700"
-                                        >
-                                            {{ formatCurrency(value) }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div
-                                v-if="chartData.length === 0"
-                                class="text-center text-gray-500 py-8"
-                            >
-                                Belum ada data penjualan
-                            </div>
+                        <div style="position: relative; height: 300px">
+                            <canvas id="salesChart"></canvas>
                         </div>
                     </div>
 
+                    <!-- Monthly Sales Chart -->
+                    <div class="bg-white shadow rounded-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                            📈 Penjualan 12 Bulan Terakhir
+                        </h3>
+                        <div style="position: relative; height: 300px">
+                            <canvas id="monthlyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row 2 -->
+                <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                    <!-- Category Chart -->
+                    <div class="bg-white shadow rounded-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                            🏆 Kategori Terlaris (7 Hari)
+                        </h3>
+                        <div style="position: relative; height: 300px">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Payment Distribution -->
+                    <div class="bg-white shadow rounded-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                            💳 Distribusi Metode Pembayaran
+                        </h3>
+                        <div style="position: relative; height: 300px">
+                            <canvas id="paymentChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tables Row -->
+                <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
                     <!-- Top Products -->
                     <div class="bg-white shadow rounded-lg p-6">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">
-                            Produk Terlaris (7 Hari)
+                            ⭐ Produk Terlaris (7 Hari)
                         </h3>
                         <div class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-gray-200">
@@ -348,6 +569,64 @@ const maxChartValue = computed(() => {
                                         </td>
                                     </tr>
                                     <tr v-if="top_products.length === 0">
+                                        <td
+                                            colspan="3"
+                                            class="py-8 text-center text-gray-500"
+                                        >
+                                            Belum ada data
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Top Categories -->
+                    <div class="bg-white shadow rounded-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                            🎯 Kategori Terlaris (7 Hari)
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead>
+                                    <tr>
+                                        <th
+                                            class="text-left text-xs font-medium text-gray-500 uppercase"
+                                        >
+                                            Kategori
+                                        </th>
+                                        <th
+                                            class="text-right text-xs font-medium text-gray-500 uppercase"
+                                        >
+                                            Terjual
+                                        </th>
+                                        <th
+                                            class="text-right text-xs font-medium text-gray-500 uppercase"
+                                        >
+                                            Revenue
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200">
+                                    <tr
+                                        v-for="item in top_categories"
+                                        :key="item.category_id"
+                                    >
+                                        <td
+                                            class="py-3 text-sm font-medium text-gray-900"
+                                        >
+                                            {{ item.name }}
+                                        </td>
+                                        <td
+                                            class="py-3 text-sm text-right font-medium"
+                                        >
+                                            {{ item.total_sold }}
+                                        </td>
+                                        <td class="py-3 text-sm text-right">
+                                            {{ formatCurrency(item.revenue) }}
+                                        </td>
+                                    </tr>
+                                    <tr v-if="top_categories.length === 0">
                                         <td
                                             colspan="3"
                                             class="py-8 text-center text-gray-500"

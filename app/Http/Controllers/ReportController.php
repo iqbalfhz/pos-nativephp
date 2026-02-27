@@ -114,9 +114,17 @@ class ReportController extends Controller
 
     public function exportSalesExcel(Request $request)
     {
+        $filename = 'sales-report-' . now()->format('Y-m-d') . '.xlsx';
+        
         return Excel::download(
             new SalesExport($request->all()),
-            'sales-report-' . now()->format('Y-m-d') . '.xlsx'
+            $filename,
+            \Maatwebsite\Excel\Excel::XLSX,
+            [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'X-Content-Type-Options' => 'nosniff',
+            ]
         );
     }
 
@@ -152,11 +160,23 @@ class ReportController extends Controller
 
         $transactions = $query->orderByDesc('created_at')->get();
 
+        $filename = 'sales-report-' . now()->format('Y-m-d') . '.pdf';
+        
         $pdf = Pdf::loadView('reports.sales', [
             'transactions' => $transactions,
             'filters' => $request->all(),
         ]);
 
-        return $pdf->download('sales-report-' . now()->format('Y-m-d') . '.pdf');
+        return response()->streamDownload(
+            function () use ($pdf) {
+                echo $pdf->output();
+            },
+            $filename,
+            [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'X-Content-Type-Options' => 'nosniff',
+            ]
+        );
     }
 }
