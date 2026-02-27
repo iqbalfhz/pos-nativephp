@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, Link, useForm } from "@inertiajs/vue3";
+import { showError, showSuccess } from "@/lib/swal";
 
 const props = defineProps({
     user: {
@@ -22,7 +23,15 @@ const form = useForm({
 });
 
 const submit = () => {
-    form.put(route("users.update", props.user.id));
+    form.put(route("users.update", props.user.id), {
+        onSuccess: () => {
+            showSuccess("User berhasil diperbarui.");
+        },
+        onError: (errors) => {
+            const firstError = Object.values(errors)[0];
+            showError(firstError || "Gagal memperbarui user.");
+        },
+    });
 };
 </script>
 

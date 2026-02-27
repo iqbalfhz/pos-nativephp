@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, Link, useForm } from "@inertiajs/vue3";
+import { confirmAction } from "@/lib/swal";
 
 defineProps({
     categories: {
@@ -11,10 +12,17 @@ defineProps({
 
 const form = useForm({});
 
-const removeCategory = (id) => {
-    if (confirm("Hapus kategori ini?")) {
-        form.delete(route("categories.destroy", id));
+const removeCategory = async (id) => {
+    const result = await confirmAction({
+        title: "Hapus kategori ini?",
+        confirmButtonText: "Ya, hapus",
+    });
+
+    if (!result.isConfirmed) {
+        return;
     }
+
+    form.delete(route("categories.destroy", id));
 };
 </script>
 

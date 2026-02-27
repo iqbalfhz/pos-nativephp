@@ -1,7 +1,8 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, useForm } from "@inertiajs/vue3";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
+import { confirmAction, showError } from "@/lib/swal";
 
 const props = defineProps({
     products: {
@@ -11,6 +12,10 @@ const props = defineProps({
     paymentMethods: {
         type: Array,
         default: () => [],
+    },
+    defaultPaymentMethodId: {
+        type: [Number, String],
+        default: null,
     },
 });
 
@@ -32,6 +37,17 @@ const form = useForm({
     tax_total: 0,
 });
 
+// Set default payment method ke Cash ketika component mount
+watch(
+    () => props.defaultPaymentMethodId,
+    (defaultId) => {
+        if (defaultId && !form.payment_method_id) {
+            form.payment_method_id = String(defaultId);
+        }
+    },
+    { immediate: true },
+);
+
 const filteredProducts = computed(() => {
     const term = query.value.toLowerCase();
     return props.products.filter(
@@ -50,13 +66,13 @@ const scanBarcode = () => {
     );
 
     if (!product) {
-        alert("Produk tidak ditemukan!");
+        showError("Produk tidak ditemukan!");
         barcodeInput.value = "";
         return;
     }
 
     if (product.stock === 0) {
-        alert("Produk habis! Tidak bisa ditambahkan ke keranjang.");
+        showError("Produk habis! Tidak bisa ditambahkan ke keranjang.");
         barcodeInput.value = "";
         return;
     }
@@ -68,14 +84,14 @@ const scanBarcode = () => {
 const addToCart = (product) => {
     // Validasi stok sebelum menambah ke cart
     if (product.stock === 0) {
-        alert("Produk habis! Tidak bisa ditambahkan ke keranjang.");
+        showError("Produk habis! Tidak bisa ditambahkan ke keranjang.");
         return;
     }
 
     const existing = cart.value.find((item) => item.product_id === product.id);
     if (existing) {
         if (existing.qty >= existing.stock) {
-            alert(`Stok maksimal untuk produk ini: ${existing.stock}`);
+            showError(`Stok maksimal untuk produk ini: ${existing.stock}`);
             return;
         }
         existing.qty += 1;
@@ -98,7 +114,7 @@ const updateQty = (productId, newQty) => {
         } else if (newQty <= item.stock) {
             item.qty = newQty;
         } else {
-            alert(`Stok tidak mencukupi. Stok tersedia: ${item.stock}`);
+            showError(`Stok tidak mencukupi. Stok tersedia: ${item.stock}`);
         }
     }
 };
@@ -109,7 +125,7 @@ const incrementQty = (productId) => {
         if (item.qty < item.stock) {
             item.qty += 1;
         } else {
-            alert(`Stok maksimal: ${item.stock}`);
+            showError(`Stok maksimal: ${item.stock}`);
         }
     }
 };
@@ -187,20 +203,28 @@ const totalItems = computed(() =>
     cart.value.reduce((sum, item) => sum + item.qty, 0),
 );
 
-const clearCart = () => {
-    if (confirm("Hapus semua item dari keranjang?")) {
-        cart.value = [];
-        discountType.value = "none";
-        discountValue.value = 0;
-        includeTax.value = false;
-        cashAmount.value = 0;
+const clearCart = async () => {
+    const result = await confirmAction({
+        title: "Kosongkan keranjang?",
+        text: "Semua item di keranjang akan dihapus.",
+        confirmButtonText: "Ya, kosongkan",
+    });
+
+    if (!result.isConfirmed) {
+        return;
     }
+
+    cart.value = [];
+    discountType.value = "none";
+    discountValue.value = 0;
+    includeTax.value = false;
+    cashAmount.value = 0;
 };
 
 const checkout = () => {
     // Validasi pembayaran hanya untuk Cash
     if (isCashPayment.value && !isPaymentSufficient.value) {
-        alert("Jumlah uang yang dibayarkan tidak mencukupi!");
+        showError("Jumlah uang yang dibayarkan tidak mencukupi!");
         return;
     }
 
@@ -673,7 +697,6 @@ const checkout = () => {
                             v-model="form.payment_method_id"
                             class="mt-1 w-full rounded-md border-gray-300"
                         >
-                            <option value="">-</option>
                             <option
                                 v-for="method in paymentMethods"
                                 :key="method.id"

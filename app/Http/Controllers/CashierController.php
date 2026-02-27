@@ -6,6 +6,7 @@ use App\Models\PaymentMethod;
 use App\Models\Product;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
+use App\Services\SettingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,15 +18,20 @@ class CashierController extends Controller
 {
     public function index(): Response
     {
+        $paymentMethods = PaymentMethod::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'type']);
+        
+        $cashPaymentMethod = $paymentMethods->firstWhere('type', 'cash');
+        
         return Inertia::render('Cashier/Index', [
             'products' => Product::query()
                 ->where('is_active', true)
                 ->orderBy('name')
                 ->get(['id', 'name', 'sku', 'barcode', 'price', 'stock']),
-            'paymentMethods' => PaymentMethod::query()
-                ->where('is_active', true)
-                ->orderBy('name')
-                ->get(['id', 'name', 'type']),
+            'paymentMethods' => $paymentMethods,
+            'defaultPaymentMethodId' => $cashPaymentMethod?->id,
         ]);
     }
 
@@ -109,6 +115,13 @@ class CashierController extends Controller
 
         return Inertia::render('Cashier/Receipt', [
             'transaction' => $transaction,
+            'storeSettings' => [
+                'store_name' => SettingService::get('store_name', 'POS Nativephp'),
+                'store_address' => SettingService::get('store_address', 'Jakarta, Indonesia'),
+                'store_phone' => SettingService::get('store_phone', '08123456789'),
+                'receipt_header' => SettingService::get('receipt_header', 'Terima Kasih Telah Berbelanja'),
+                'receipt_footer' => SettingService::get('receipt_footer', 'Barang yang sudah dibeli tidak dapat dikembalikan'),
+            ],
         ]);
     }
 

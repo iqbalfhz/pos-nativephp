@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, Link, useForm } from "@inertiajs/vue3";
+import { confirmAction, showError, showSuccess } from "@/lib/swal";
 
 const props = defineProps({
     settings: {
@@ -25,14 +26,39 @@ const form = useForm({
     enable_notifications: props.settings.enable_notifications !== false,
 });
 
+const resetForm = useForm({});
+
 const submit = () => {
-    form.put(route("settings.update"));
+    form.put(route("settings.update"), {
+        onSuccess: () => {
+            showSuccess("Pengaturan berhasil diperbarui.");
+        },
+        onError: (errors) => {
+            const firstError = Object.values(errors)[0];
+            showError(firstError || "Gagal menyimpan pengaturan.");
+        },
+    });
 };
 
-const reset = () => {
-    if (confirm("Reset semua pengaturan ke nilai default?")) {
-        useForm({}).post(route("settings.reset"));
+const reset = async () => {
+    const result = await confirmAction({
+        title: "Reset semua pengaturan?",
+        text: "Semua nilai akan dikembalikan ke default.",
+        confirmButtonText: "Ya, reset",
+    });
+
+    if (!result.isConfirmed) {
+        return;
     }
+
+    resetForm.post(route("settings.reset"), {
+        onSuccess: () => {
+            showSuccess("Pengaturan berhasil direset ke default.");
+        },
+        onError: () => {
+            showError("Gagal mereset pengaturan.");
+        },
+    });
 };
 </script>
 

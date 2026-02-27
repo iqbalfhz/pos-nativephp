@@ -2,6 +2,7 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, Link, useForm } from "@inertiajs/vue3";
 import { computed } from "vue";
+import { showError, showSuccess } from "@/lib/swal";
 
 const props = defineProps({
     product: {
@@ -35,7 +36,14 @@ const predictedStock = computed(() => {
 
 const submit = () => {
     form.post(route("stock.storeAdjustment", props.product.id), {
-        onSuccess: () => form.reset(),
+        onSuccess: () => {
+            showSuccess("Stok berhasil disesuaikan.");
+            form.reset();
+        },
+        onError: (errors) => {
+            const firstError = Object.values(errors)[0];
+            showError(firstError || "Gagal menyesuaikan stok.");
+        },
     });
 };
 

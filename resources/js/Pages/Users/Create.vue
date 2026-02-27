@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, Link, useForm } from "@inertiajs/vue3";
+import { showError, showSuccess } from "@/lib/swal";
 
 const props = defineProps({
     roles: {
@@ -19,7 +20,14 @@ const form = useForm({
 
 const submit = () => {
     form.post(route("users.store"), {
-        onSuccess: () => form.reset(),
+        onSuccess: () => {
+            showSuccess("User berhasil ditambahkan.");
+            form.reset();
+        },
+        onError: (errors) => {
+            const firstError = Object.values(errors)[0];
+            showError(firstError || "Gagal menambah user.");
+        },
     });
 };
 </script>

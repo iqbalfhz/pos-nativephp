@@ -6,6 +6,7 @@ use App\Exports\SalesExport;
 use App\Models\PaymentMethod;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\SettingService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
@@ -98,7 +99,7 @@ class ReportController extends Controller
                 'payment_method' => $transaction->paymentMethod?->name,
                 'cashier' => $transaction->user?->name,
                 'notes' => $transaction->notes,
-                'created_at' => $transaction->created_at->format('d/m/Y H:i:s'),
+                'created_at' => $transaction->created_at->toIso8601String(),
                 'items' => $transaction->items->map(fn ($item) => [
                     'product_name' => $item->product->name,
                     'sku' => $item->product->sku,
@@ -107,6 +108,7 @@ class ReportController extends Controller
                     'total' => $item->total,
                 ]),
             ],
+            'storeSettings' => SettingService::all(),
         ]);
     }
 

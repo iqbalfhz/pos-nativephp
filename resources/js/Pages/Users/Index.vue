@@ -2,6 +2,7 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, Link, router, useForm } from "@inertiajs/vue3";
 import { ref, watch } from "vue";
+import { confirmAction } from "@/lib/swal";
 
 const props = defineProps({
     users: {
@@ -42,12 +43,20 @@ const resetFilters = () => {
     roleFilter.value = "";
 };
 
-const deleteUser = (id) => {
-    if (confirm("Hapus user ini? Aksi ini tidak dapat dibatalkan.")) {
-        form.delete(route("users.destroy", id), {
-            preserveScroll: true,
-        });
+const deleteUser = async (id) => {
+    const result = await confirmAction({
+        title: "Hapus user ini?",
+        text: "Aksi ini tidak dapat dibatalkan.",
+        confirmButtonText: "Ya, hapus",
+    });
+
+    if (!result.isConfirmed) {
+        return;
     }
+
+    form.delete(route("users.destroy", id), {
+        preserveScroll: true,
+    });
 };
 
 const getRoleBadgeColor = (roleName) => {

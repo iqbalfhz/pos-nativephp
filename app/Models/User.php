@@ -58,6 +58,11 @@ class User extends Authenticatable
         return $this->hasMany(Transaction::class);
     }
 
+    public function activityLogs(): HasMany
+    {
+        return $this->hasMany(ActivityLog::class);
+    }
+
     public function hasRole(string|array $roles): bool
     {
         $roleList = is_array($roles) ? $roles : explode('|', $roles);

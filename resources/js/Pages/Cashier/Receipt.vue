@@ -8,6 +8,10 @@ const props = defineProps({
         type: Object,
         required: true,
     },
+    storeSettings: {
+        type: Object,
+        default: () => ({}),
+    },
 });
 
 const formatCurrency = (value) => {
@@ -18,7 +22,7 @@ const formatCurrency = (value) => {
 };
 
 const formatDate = (date) => {
-    return new Date(date).toLocaleDateString("id-ID", {
+    return new Date(date).toLocaleString("id-ID", {
         year: "numeric",
         month: "long",
         day: "numeric",
@@ -109,13 +113,17 @@ const generateWhatsAppMessage = () => {
                     <!-- Header -->
                     <div class="text-center border-b-2 border-dashed pb-4 mb-6">
                         <h1 class="text-2xl font-bold text-gray-900">
-                            NAMA TOKO
+                            {{ storeSettings.store_name || "POS Nativephp" }}
                         </h1>
                         <p class="text-sm text-gray-600 mt-1">
-                            Alamat Toko Anda
+                            {{
+                                storeSettings.store_address ||
+                                "Jakarta, Indonesia"
+                            }}
                         </p>
                         <p class="text-sm text-gray-600">
-                            Telp: (021) 1234-5678
+                            Telp:
+                            {{ storeSettings.store_phone || "08123456789" }}
                         </p>
                     </div>
 
@@ -244,9 +252,17 @@ const generateWhatsAppMessage = () => {
                     <div
                         class="text-center text-sm text-gray-500 border-t-2 border-dashed pt-4"
                     >
-                        <p class="font-semibold">Terima Kasih!</p>
+                        <p class="font-semibold">
+                            {{
+                                storeSettings.receipt_header ||
+                                "Terima Kasih Telah Berbelanja"
+                            }}
+                        </p>
                         <p class="mt-1">
-                            Barang yang sudah dibeli tidak dapat dikembalikan
+                            {{
+                                storeSettings.receipt_footer ||
+                                "Barang yang sudah dibeli tidak dapat dikembalikan"
+                            }}
                         </p>
                     </div>
                 </div>

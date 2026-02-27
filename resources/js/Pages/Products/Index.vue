@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, Link, useForm } from "@inertiajs/vue3";
+import { confirmAction } from "@/lib/swal";
 
 defineProps({
     products: {
@@ -11,10 +12,25 @@ defineProps({
 
 const form = useForm({});
 
-const removeProduct = (id) => {
-    if (confirm("Hapus produk ini?")) {
-        form.delete(route("products.destroy", id));
+const formatCurrency = (value) => {
+    return new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        minimumFractionDigits: 0,
+    }).format(value);
+};
+
+const removeProduct = async (id) => {
+    const result = await confirmAction({
+        title: "Hapus produk ini?",
+        confirmButtonText: "Ya, hapus",
+    });
+
+    if (!result.isConfirmed) {
+        return;
     }
+
+    form.delete(route("products.destroy", id));
 };
 </script>
 
@@ -68,7 +84,7 @@ const removeProduct = (id) => {
                                         {{ product.category?.name || "-" }}
                                     </td>
                                     <td class="py-3 text-gray-600">
-                                        {{ product.price }}
+                                        {{ formatCurrency(product.price) }}
                                     </td>
                                     <td class="py-3 text-gray-600">
                                         {{ product.stock }}

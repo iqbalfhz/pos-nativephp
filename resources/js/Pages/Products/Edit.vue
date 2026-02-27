@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, Link, useForm } from "@inertiajs/vue3";
+import { showError, showSuccess } from "@/lib/swal";
 
 const props = defineProps({
     product: {
@@ -26,7 +27,15 @@ const form = useForm({
 });
 
 const submit = () => {
-    form.put(route("products.update", props.product.id));
+    form.put(route("products.update", props.product.id), {
+        onSuccess: () => {
+            showSuccess("Produk berhasil diperbarui.");
+        },
+        onError: (errors) => {
+            const firstError = Object.values(errors)[0];
+            showError(firstError || "Gagal memperbarui produk.");
+        },
+    });
 };
 </script>
 

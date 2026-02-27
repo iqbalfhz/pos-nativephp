@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, Link, useForm } from "@inertiajs/vue3";
+import { showError, showSuccess } from "@/lib/swal";
 
 const props = defineProps({
     category: {
@@ -15,7 +16,15 @@ const form = useForm({
 });
 
 const submit = () => {
-    form.put(route("categories.update", props.category.id));
+    form.put(route("categories.update", props.category.id), {
+        onSuccess: () => {
+            showSuccess("Kategori berhasil diperbarui.");
+        },
+        onError: (errors) => {
+            const firstError = Object.values(errors)[0];
+            showError(firstError || "Gagal memperbarui kategori.");
+        },
+    });
 };
 </script>
 

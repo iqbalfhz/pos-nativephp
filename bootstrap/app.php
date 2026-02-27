@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
             'permission' => \App\Http\Middleware\PermissionMiddleware::class,
+            'activity.log' => \App\Http\Middleware\ActivityLogMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

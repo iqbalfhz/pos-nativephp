@@ -1,12 +1,15 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, Link } from "@inertiajs/vue3";
-import { computed } from "vue";
 
 const props = defineProps({
     transaction: {
         type: Object,
         required: true,
+    },
+    storeSettings: {
+        type: Object,
+        default: () => ({}),
     },
 });
 
@@ -16,6 +19,16 @@ const formatCurrency = (value) => {
         currency: "IDR",
         minimumFractionDigits: 0,
     }).format(value);
+};
+
+const formatDate = (date) => {
+    return new Date(date).toLocaleString("id-ID", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
 };
 
 const printTransaction = () => {
@@ -35,13 +48,13 @@ const printTransaction = () => {
                 <div class="flex gap-2">
                     <button
                         @click="printTransaction"
-                        class="rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+                        class="rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition print:hidden"
                     >
-                        Print
+                        🖨️ Print
                     </button>
                     <Link
                         :href="route('reports.sales')"
-                        class="rounded-md bg-gray-800 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-700 transition"
+                        class="rounded-md bg-gray-800 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-700 transition print:hidden"
                     >
                         Kembali
                     </Link>
@@ -50,151 +63,163 @@ const printTransaction = () => {
         </template>
 
         <div class="py-8">
-            <div class="mx-auto max-w-4xl sm:px-6 lg:px-8 space-y-6">
-                <!-- Transaction Info -->
-                <div class="bg-white shadow sm:rounded-lg p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">
-                        Informasi Transaksi
-                    </h3>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div>
-                            <p class="text-sm text-gray-500">Kode Transaksi</p>
-                            <p class="font-medium text-gray-900">
-                                {{ transaction.code }}
-                            </p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-500">Tanggal</p>
-                            <p class="font-medium text-gray-900">
-                                {{ transaction.created_at }}
-                            </p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-500">Kasir</p>
-                            <p class="font-medium text-gray-900">
-                                {{ transaction.cashier }}
-                            </p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-500">
-                                Metode Pembayaran
-                            </p>
-                            <p class="font-medium text-gray-900">
-                                {{ transaction.payment_method }}
-                            </p>
-                        </div>
+            <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+                <!-- Receipt/Struk Content -->
+                <div
+                    class="bg-white shadow-lg rounded-lg p-8 print:shadow-none"
+                >
+                    <!-- Header -->
+                    <div class="text-center border-b-2 border-dashed pb-4 mb-6">
+                        <h1 class="text-2xl font-bold text-gray-900">
+                            {{ storeSettings.store_name || "POS Nativephp" }}
+                        </h1>
+                        <p class="text-sm text-gray-600 mt-1">
+                            {{
+                                storeSettings.store_address ||
+                                "Jakarta, Indonesia"
+                            }}
+                        </p>
+                        <p class="text-sm text-gray-600">
+                            Telp:
+                            {{ storeSettings.store_phone || "08123456789" }}
+                        </p>
                     </div>
-                    <div v-if="transaction.notes" class="mt-4">
-                        <p class="text-sm text-gray-500">Catatan</p>
-                        <p class="text-gray-900">{{ transaction.notes }}</p>
-                    </div>
-                </div>
 
-                <!-- Items -->
-                <div class="bg-white shadow sm:rounded-lg p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">
-                        Item Transaksi
-                    </h3>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th
-                                        class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase"
-                                    >
-                                        Produk
-                                    </th>
-                                    <th
-                                        class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase"
-                                    >
-                                        Harga
-                                    </th>
-                                    <th
-                                        class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase"
-                                    >
-                                        Qty
-                                    </th>
-                                    <th
-                                        class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase"
-                                    >
-                                        Subtotal
-                                    </th>
+                    <!-- Transaction Info -->
+                    <div class="space-y-2 mb-6 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">No. Transaksi</span>
+                            <span class="font-semibold">{{
+                                transaction.code
+                            }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Tanggal</span>
+                            <span>{{
+                                formatDate(transaction.created_at)
+                            }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Kasir</span>
+                            <span>{{ transaction.cashier || "-" }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Metode Pembayaran</span>
+                            <span>{{ transaction.payment_method || "-" }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Items -->
+                    <div class="border-t-2 border-b-2 border-dashed py-4 mb-4">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b">
+                                    <th class="text-left pb-2">Item</th>
+                                    <th class="text-right pb-2">Qty</th>
+                                    <th class="text-right pb-2">Harga</th>
+                                    <th class="text-right pb-2">Total</th>
                                 </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
+                            <tbody>
                                 <tr
                                     v-for="(item, index) in transaction.items"
                                     :key="index"
+                                    class="border-b border-gray-200"
                                 >
-                                    <td class="px-4 py-3 text-sm">
-                                        <div class="font-medium text-gray-900">
+                                    <td class="py-2">
+                                        <div class="font-medium">
                                             {{ item.product_name }}
                                         </div>
-                                        <div class="text-gray-500">
+                                        <div class="text-gray-500 text-xs">
                                             {{ item.sku }}
                                         </div>
                                     </td>
-                                    <td
-                                        class="px-4 py-3 text-sm text-right text-gray-600"
-                                    >
-                                        {{ formatCurrency(item.price) }}
-                                    </td>
-                                    <td
-                                        class="px-4 py-3 text-sm text-center font-medium text-gray-900"
-                                    >
+                                    <td class="text-right py-2">
                                         {{ item.qty }}
                                     </td>
-                                    <td
-                                        class="px-4 py-3 text-sm text-right font-medium text-gray-900"
-                                    >
+                                    <td class="text-right py-2">
+                                        {{ formatCurrency(item.price) }}
+                                    </td>
+                                    <td class="text-right font-medium py-2">
                                         {{ formatCurrency(item.total) }}
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                </div>
 
-                <!-- Summary -->
-                <div class="bg-white shadow sm:rounded-lg p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">
-                        Ringkasan Pembayaran
-                    </h3>
-                    <div class="space-y-2">
+                    <!-- Totals -->
+                    <div class="space-y-2 mb-6">
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-600">Subtotal</span>
-                            <span class="font-medium text-gray-900">
-                                {{ formatCurrency(transaction.subtotal) }}
-                            </span>
+                            <span>{{
+                                formatCurrency(transaction.subtotal)
+                            }}</span>
                         </div>
                         <div
                             v-if="transaction.discount_total > 0"
                             class="flex justify-between text-sm"
                         >
                             <span class="text-gray-600">Diskon</span>
-                            <span class="font-medium text-red-600">
-                                -{{
+                            <span class="text-red-600"
+                                >-{{
                                     formatCurrency(transaction.discount_total)
-                                }}
-                            </span>
+                                }}</span
+                            >
                         </div>
                         <div
                             v-if="transaction.tax_total > 0"
                             class="flex justify-between text-sm"
                         >
-                            <span class="text-gray-600">PB1 (10%)</span>
-                            <span class="font-medium text-gray-900">
-                                {{ formatCurrency(transaction.tax_total) }}
-                            </span>
+                            <span class="text-gray-600">Pajak</span>
+                            <span>{{
+                                formatCurrency(transaction.tax_total)
+                            }}</span>
                         </div>
                         <div
-                            class="flex justify-between text-lg font-semibold pt-2 border-t"
+                            class="flex justify-between text-lg font-bold border-t-2 border-dashed pt-2"
                         >
-                            <span class="text-gray-900">Total</span>
-                            <span class="text-indigo-600">
-                                {{ formatCurrency(transaction.total) }}
-                            </span>
+                            <span>TOTAL</span>
+                            <span>{{ formatCurrency(transaction.total) }}</span>
                         </div>
+                    </div>
+
+                    <!-- Payment Status -->
+                    <div class="text-center text-sm text-gray-600 mb-6">
+                        <p class="font-semibold">
+                            {{
+                                transaction.payment_status === "paid"
+                                    ? "LUNAS"
+                                    : "BELUM LUNAS"
+                            }}
+                        </p>
+                    </div>
+
+                    <!-- Notes -->
+                    <div
+                        v-if="transaction.notes"
+                        class="text-sm text-gray-600 mb-6 border-t pt-4"
+                    >
+                        <p class="font-semibold">Catatan:</p>
+                        <p class="mt-1">{{ transaction.notes }}</p>
+                    </div>
+
+                    <!-- Footer -->
+                    <div
+                        class="text-center text-sm text-gray-500 border-t-2 border-dashed pt-4"
+                    >
+                        <p class="font-semibold">
+                            {{
+                                storeSettings.receipt_header ||
+                                "Terima Kasih Telah Berbelanja"
+                            }}
+                        </p>
+                        <p class="mt-1">
+                            {{
+                                storeSettings.receipt_footer ||
+                                "Barang yang sudah dibeli tidak dapat dikembalikan"
+                            }}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -204,10 +229,26 @@ const printTransaction = () => {
 
 <style>
 @media print {
-    nav,
-    header button,
-    .no-print {
-        display: none;
+    body * {
+        visibility: hidden;
+    }
+
+    .bg-white,
+    .bg-white * {
+        visibility: visible;
+    }
+
+    .bg-white {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+    }
+
+    @page {
+        margin: 1cm;
     }
 }
 </style>

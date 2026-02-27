@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, Link, useForm } from "@inertiajs/vue3";
+import { showError, showSuccess } from "@/lib/swal";
 
 const props = defineProps({
     categories: {
@@ -22,7 +23,15 @@ const form = useForm({
 });
 
 const submit = () => {
-    form.post(route("products.store"));
+    form.post(route("products.store"), {
+        onSuccess: () => {
+            showSuccess("Produk berhasil ditambahkan.");
+        },
+        onError: (errors) => {
+            const firstError = Object.values(errors)[0];
+            showError(firstError || "Gagal menambah produk.");
+        },
+    });
 };
 </script>
 
