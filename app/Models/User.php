@@ -6,6 +6,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable
 {
@@ -44,5 +46,33 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function roles(): BelongsToMany
+    {
+        return $this->belongsToMany(Role::class);
+    }
+
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
+    public function hasRole(string|array $roles): bool
+    {
+        $roleList = is_array($roles) ? $roles : explode('|', $roles);
+
+        return $this->roles()->whereIn('name', $roleList)->exists();
+    }
+
+    public function hasPermission(string|array $permissions): bool
+    {
+        $permissionList = is_array($permissions) ? $permissions : explode('|', $permissions);
+
+        return $this->roles()
+            ->whereHas('permissions', function ($query) use ($permissionList) {
+                $query->whereIn('name', $permissionList);
+            })
+            ->exists();
     }
 }
