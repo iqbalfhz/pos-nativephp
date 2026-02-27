@@ -49,18 +49,35 @@ const scanBarcode = () => {
         (p) => p.barcode === barcodeInput.value || p.sku === barcodeInput.value,
     );
 
-    if (product) {
-        addToCart(product);
-        barcodeInput.value = "";
-    } else {
+    if (!product) {
         alert("Produk tidak ditemukan!");
         barcodeInput.value = "";
+        return;
     }
+
+    if (product.stock === 0) {
+        alert("Produk habis! Tidak bisa ditambahkan ke keranjang.");
+        barcodeInput.value = "";
+        return;
+    }
+
+    addToCart(product);
+    barcodeInput.value = "";
 };
 
 const addToCart = (product) => {
+    // Validasi stok sebelum menambah ke cart
+    if (product.stock === 0) {
+        alert("Produk habis! Tidak bisa ditambahkan ke keranjang.");
+        return;
+    }
+
     const existing = cart.value.find((item) => item.product_id === product.id);
     if (existing) {
+        if (existing.qty >= existing.stock) {
+            alert(`Stok maksimal untuk produk ini: ${existing.stock}`);
+            return;
+        }
         existing.qty += 1;
     } else {
         cart.value.push({
@@ -146,6 +163,18 @@ const isPaymentSufficient = computed(
     () => cashAmount.value >= grandTotal.value,
 );
 
+const selectedPaymentMethod = computed(() => {
+    if (!form.payment_method_id) return null;
+    return props.paymentMethods.find(
+        (m) => m.id === parseInt(form.payment_method_id),
+    );
+});
+
+const isCashPayment = computed(() => {
+    if (!selectedPaymentMethod.value) return true; // Default: show cash input jika belum pilih
+    return selectedPaymentMethod.value.name.toLowerCase() === "cash";
+});
+
 const formatCurrency = (value) => {
     return new Intl.NumberFormat("id-ID", {
         style: "currency",
@@ -169,7 +198,8 @@ const clearCart = () => {
 };
 
 const checkout = () => {
-    if (!isPaymentSufficient.value) {
+    // Validasi pembayaran hanya untuk Cash
+    if (isCashPayment.value && !isPaymentSufficient.value) {
         alert("Jumlah uang yang dibayarkan tidak mencukupi!");
         return;
     }
@@ -552,7 +582,10 @@ const checkout = () => {
                     </div>
 
                     <!-- Pembayaran -->
-                    <div v-if="cart.length" class="border-t pt-3 space-y-3">
+                    <div
+                        v-if="cart.length && isCashPayment"
+                        class="border-t pt-3 space-y-3"
+                    >
                         <div>
                             <label
                                 class="block text-sm font-medium text-gray-700 mb-1"
@@ -679,7 +712,7 @@ const checkout = () => {
                         :disabled="
                             form.processing ||
                             !cart.length ||
-                            !isPaymentSufficient
+                            (isCashPayment && !isPaymentSufficient)
                         "
                         @click="checkout"
                     >

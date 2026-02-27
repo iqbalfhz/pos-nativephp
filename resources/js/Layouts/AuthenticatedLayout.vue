@@ -1,11 +1,11 @@
 <script setup>
-import { ref } from 'vue';
-import ApplicationLogo from '@/Components/ApplicationLogo.vue';
-import Dropdown from '@/Components/Dropdown.vue';
-import DropdownLink from '@/Components/DropdownLink.vue';
-import NavLink from '@/Components/NavLink.vue';
-import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
-import { Link } from '@inertiajs/vue3';
+import { ref } from "vue";
+import ApplicationLogo from "@/Components/ApplicationLogo.vue";
+import Dropdown from "@/Components/Dropdown.vue";
+import DropdownLink from "@/Components/DropdownLink.vue";
+import NavLink from "@/Components/NavLink.vue";
+import ResponsiveNavLink from "@/Components/ResponsiveNavLink.vue";
+import { Link } from "@inertiajs/vue3";
 
 const showingNavigationDropdown = ref(false);
 </script>
@@ -13,9 +13,7 @@ const showingNavigationDropdown = ref(false);
 <template>
     <div>
         <div class="min-h-screen bg-gray-100">
-            <nav
-                class="border-b border-gray-100 bg-white"
-            >
+            <nav class="border-b border-gray-100 bg-white">
                 <!-- Primary Navigation Menu -->
                 <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div class="flex h-16 justify-between">
@@ -58,10 +56,28 @@ const showingNavigationDropdown = ref(false);
                                     Categories
                                 </NavLink>
                                 <NavLink
+                                    :href="route('stock.index')"
+                                    :active="route().current('stock.*')"
+                                >
+                                    Stock
+                                </NavLink>
+                                <NavLink
                                     :href="route('reports.sales')"
                                     :active="route().current('reports.*')"
                                 >
                                     Reports
+                                </NavLink>
+                                <NavLink
+                                    :href="route('users.index')"
+                                    :active="route().current('users.*')"
+                                >
+                                    Users
+                                </NavLink>
+                                <NavLink
+                                    :href="route('settings.index')"
+                                    :active="route().current('settings.*')"
+                                >
+                                    Settings
                                 </NavLink>
                             </div>
                         </div>
@@ -99,6 +115,11 @@ const showingNavigationDropdown = ref(false);
                                             :href="route('profile.edit')"
                                         >
                                             Profile
+                                        </DropdownLink>
+                                        <DropdownLink
+                                            :href="route('settings.index')"
+                                        >
+                                            Settings
                                         </DropdownLink>
                                         <DropdownLink
                                             :href="route('logout')"
@@ -189,21 +210,35 @@ const showingNavigationDropdown = ref(false);
                             Categories
                         </ResponsiveNavLink>
                         <ResponsiveNavLink
+                            :href="route('stock.index')"
+                            :active="route().current('stock.*')"
+                        >
+                            Stock
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
                             :href="route('reports.sales')"
                             :active="route().current('reports.*')"
                         >
                             Reports
                         </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            :href="route('users.index')"
+                            :active="route().current('users.*')"
+                        >
+                            Users
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            :href="route('settings.index')"
+                            :active="route().current('settings.*')"
+                        >
+                            Settings
+                        </ResponsiveNavLink>
                     </div>
 
                     <!-- Responsive Settings Options -->
-                    <div
-                        class="border-t border-gray-200 pb-1 pt-4"
-                    >
+                    <div class="border-t border-gray-200 pb-1 pt-4">
                         <div class="px-4">
-                            <div
-                                class="text-base font-medium text-gray-800"
-                            >
+                            <div class="text-base font-medium text-gray-800">
                                 {{ $page.props.auth.user.name }}
                             </div>
                             <div class="text-sm font-medium text-gray-500">
@@ -228,10 +263,7 @@ const showingNavigationDropdown = ref(false);
             </nav>
 
             <!-- Page Heading -->
-            <header
-                class="bg-white shadow"
-                v-if="$slots.header"
-            >
+            <header class="bg-white shadow" v-if="$slots.header">
                 <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                     <slot name="header" />
                 </div>

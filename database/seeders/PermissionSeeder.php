@@ -18,6 +18,7 @@ class PermissionSeeder extends Seeder
             'manage-payments',
             'view-reports',
             'process-sales',
+            'manage-settings',
         ];
 
         foreach ($permissions as $permission) {
@@ -39,6 +40,7 @@ class PermissionSeeder extends Seeder
                 'manage-discounts',
                 'manage-payments',
                 'view-reports',
+                'manage-settings',
             ])->pluck('id'));
         }
 
