@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, Link } from "@inertiajs/vue3";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
 const props = defineProps({
     transaction: {
@@ -13,6 +13,8 @@ const props = defineProps({
         default: () => ({}),
     },
 });
+
+const isLoadingPdf = ref(false);
 
 const formatCurrency = (value) => {
     return new Intl.NumberFormat("id-ID", {
@@ -35,11 +37,79 @@ const printReceipt = () => {
     window.print();
 };
 
-const sendWhatsApp = () => {
+const downloadPdf = () => {
+    window.location.href = route(
+        "cashier.receipt.export-pdf",
+        props.transaction.id,
+    );
+};
+
+const sendReceiptViaWhatsApp = async () => {
     const phone = props.transaction.customer_phone || "";
-    const message = generateWhatsAppMessage();
-    const url = `https://wa.me/${phone.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`;
-    window.open(url, "_blank");
+    const cleanPhone = phone.replace(/\D/g, "");
+
+    if (!cleanPhone) {
+        alert("Nomor telepon pelanggan belum tersedia");
+        return;
+    }
+
+    isLoadingPdf.value = true;
+
+    try {
+        // Generate PDF and get download URL
+        const response = await fetch(
+            route("cashier.receipt.generate-pdf", props.transaction.id),
+            {
+                method: "POST",
+                headers: {
+                    "X-CSRF-TOKEN": document.querySelector(
+                        'meta[name="csrf-token"]',
+                    ).content,
+                    "Content-Type": "application/json",
+                },
+            },
+        );
+
+        if (!response.ok) {
+            throw new Error("Gagal generate PDF");
+        }
+
+        const data = await response.json();
+        const pdfUrl = data.download_url;
+
+        // Create message with PDF link
+        let msg = `*STRUK PEMBAYARAN*\n\n`;
+        msg += `No. Transaksi: ${props.transaction.code}\n`;
+        msg += `Tanggal: ${formatDate(props.transaction.created_at)}\n`;
+        msg += `Kasir: ${props.transaction.user?.name || "-"}\n\n`;
+        msg += `📎 Unduh struk: ${pdfUrl}\n\n`;
+        msg += `*DETAIL PEMBELIAN*\n`;
+
+        props.transaction.items.forEach((item) => {
+            msg += `${item.product?.name || "Produk"}\n`;
+            msg += `  ${item.qty} x ${formatCurrency(item.price)} = ${formatCurrency(item.total)}\n`;
+        });
+
+        msg += `\n`;
+        msg += `Subtotal: ${formatCurrency(props.transaction.subtotal)}\n`;
+        if (props.transaction.discount_total > 0) {
+            msg += `Diskon: ${formatCurrency(props.transaction.discount_total)}\n`;
+        }
+        if (props.transaction.tax_total > 0) {
+            msg += `Pajak: ${formatCurrency(props.transaction.tax_total)}\n`;
+        }
+        msg += `*Total: ${formatCurrency(props.transaction.total)}*\n\n`;
+        msg += `Metode Pembayaran: ${props.transaction.payment_method?.name || "Cash"}\n`;
+        msg += `\nTerima kasih atas pembelian Anda!`;
+
+        const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+        window.open(whatsappUrl, "_blank");
+    } catch (error) {
+        console.error("Error:", error);
+        alert("Gagal generate PDF: " + error.message);
+    } finally {
+        isLoadingPdf.value = false;
+    }
 };
 
 const generateWhatsAppMessage = () => {
@@ -84,23 +154,34 @@ const generateWhatsAppMessage = () => {
         <div class="py-8">
             <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
                 <!-- Action Buttons (Hide on Print) -->
-                <div class="mb-6 flex gap-3 print:hidden">
+                <div class="mb-6 flex flex-wrap gap-3 print:hidden">
                     <button
                         @click="printReceipt"
-                        class="flex-1 rounded-lg bg-blue-600 px-6 py-3 text-white font-semibold hover:bg-blue-700 transition"
+                        class="flex-1 min-w-[120px] rounded-lg bg-blue-600 px-4 py-3 text-white font-semibold hover:bg-blue-700 transition text-sm md:text-base"
                     >
                         🖨️ Print Struk
                     </button>
                     <button
-                        v-if="transaction.customer_phone"
-                        @click="sendWhatsApp"
-                        class="flex-1 rounded-lg bg-green-600 px-6 py-3 text-white font-semibold hover:bg-green-700 transition"
+                        @click="downloadPdf"
+                        class="flex-1 min-w-[120px] rounded-lg bg-red-600 px-4 py-3 text-white font-semibold hover:bg-red-700 transition text-sm md:text-base"
                     >
-                        📱 Kirim via WhatsApp
+                        📄 Download PDF
+                    </button>
+                    <button
+                        v-if="transaction.customer_phone"
+                        @click="sendReceiptViaWhatsApp"
+                        :disabled="isLoadingPdf"
+                        class="flex-1 min-w-[120px] rounded-lg bg-green-600 px-4 py-3 text-white font-semibold hover:bg-green-700 transition text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {{
+                            isLoadingPdf
+                                ? "⏳ Generating..."
+                                : "📱 Kirim via WhatsApp"
+                        }}
                     </button>
                     <Link
                         :href="route('cashier.index')"
-                        class="rounded-lg bg-gray-600 px-6 py-3 text-white font-semibold hover:bg-gray-700 transition text-center"
+                        class="flex-1 min-w-[100px] rounded-lg bg-gray-600 px-4 py-3 text-white font-semibold hover:bg-gray-700 transition text-center text-sm md:text-base"
                     >
                         Kembali
                     </Link>

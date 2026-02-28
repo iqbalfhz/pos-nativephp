@@ -12,7 +12,23 @@ class PermissionMiddleware
     {
         $user = $request->user();
 
-        if (! $user || ! $user->hasPermission($permissions)) {
+        if (!$user) {
+            abort(403);
+        }
+
+        // Parse permissions string (supports "permission1|permission2" format)
+        $permissionArray = explode('|', $permissions);
+
+        // Check if user has any of the permissions
+        $hasPermission = false;
+        foreach ($permissionArray as $permission) {
+            if ($user->hasPermissionTo(trim($permission))) {
+                $hasPermission = true;
+                break;
+            }
+        }
+
+        if (!$hasPermission) {
             abort(403);
         }
 

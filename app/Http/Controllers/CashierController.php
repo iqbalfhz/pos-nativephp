@@ -7,16 +7,20 @@ use App\Models\Product;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
 use App\Services\SettingService;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
-use Inertia\Response;
+use Inertia\Response as InertiaResponse;
 
 class CashierController extends Controller
 {
-    public function index(): Response
+    public function index(): InertiaResponse
     {
         $paymentMethods = PaymentMethod::query()
             ->where('is_active', true)
@@ -109,7 +113,7 @@ class CashierController extends Controller
         return redirect()->route('cashier.receipt', $transaction->id);
     }
 
-    public function receipt(Transaction $transaction): Response
+    public function receipt(Transaction $transaction): InertiaResponse
     {
         $transaction->load(['items.product', 'user', 'paymentMethod']);
 
@@ -122,6 +126,64 @@ class CashierController extends Controller
                 'receipt_header' => SettingService::get('receipt_header', 'Terima Kasih Telah Berbelanja'),
                 'receipt_footer' => SettingService::get('receipt_footer', 'Barang yang sudah dibeli tidak dapat dikembalikan'),
             ],
+        ]);
+    }
+
+    public function exportPdf(Transaction $transaction): Response
+    {
+        $transaction->load(['items.product', 'user', 'paymentMethod']);
+        
+        $storeSettings = [
+            'store_name' => SettingService::get('store_name', 'POS Nativephp'),
+            'store_address' => SettingService::get('store_address', 'Jakarta, Indonesia'),
+            'store_phone' => SettingService::get('store_phone', '08123456789'),
+            'receipt_header' => SettingService::get('receipt_header', 'Terima Kasih Telah Berbelanja'),
+            'receipt_footer' => SettingService::get('receipt_footer', 'Barang yang sudah dibeli tidak dapat dikembalikan'),
+        ];
+
+        $pdf = Pdf::loadView('receipts.pdf', [
+            'transaction' => $transaction,
+            'storeSettings' => $storeSettings,
+        ]);
+
+        return $pdf->download('struk-'.$transaction->code.'.pdf');
+    }
+
+    public function generateReceiptPdf(Transaction $transaction): JsonResponse
+    {
+        $transaction->load(['items.product', 'user', 'paymentMethod']);
+        
+        $storeSettings = [
+            'store_name' => SettingService::get('store_name', 'POS Nativephp'),
+            'store_address' => SettingService::get('store_address', 'Jakarta, Indonesia'),
+            'store_phone' => SettingService::get('store_phone', '08123456789'),
+            'receipt_header' => SettingService::get('receipt_header', 'Terima Kasih Telah Berbelanja'),
+            'receipt_footer' => SettingService::get('receipt_footer', 'Barang yang sudah dibeli tidak dapat dikembalikan'),
+        ];
+
+        $pdf = Pdf::loadView('receipts.pdf', [
+            'transaction' => $transaction,
+            'storeSettings' => $storeSettings,
+        ]);
+
+        // Create directory if not exists
+        if (!Storage::disk('public')->exists('receipts')) {
+            Storage::disk('public')->makeDirectory('receipts');
+        }
+
+        $filename = 'struk-'.$transaction->code.'.pdf';
+        $path = 'receipts/'.$filename;
+
+        // Save PDF to public storage
+        Storage::disk('public')->put($path, $pdf->output());
+
+        // Generate URL
+        $downloadUrl = url('/storage/'.$path);
+
+        return response()->json([
+            'success' => true,
+            'download_url' => $downloadUrl,
+            'filename' => $filename,
         ]);
     }
 

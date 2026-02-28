@@ -7,8 +7,11 @@ use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
-class SalesExport implements FromCollection, WithHeadings, WithMapping
+class SalesExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithColumnFormatting
 {
     protected $filters;
 
@@ -76,7 +79,17 @@ class SalesExport implements FromCollection, WithHeadings, WithMapping
             $transaction->discount_total,
             $transaction->tax_total,
             $transaction->total,
-            $transaction->created_at?->toDateTimeString(),
+            $transaction->created_at?->format('d/m/Y H:i'),
+        ];
+    }
+
+    public function columnFormats(): array
+    {
+        return [
+            'E' => '#,##0',
+            'F' => '#,##0',
+            'G' => '#,##0',
+            'H' => '#,##0',
         ];
     }
 }

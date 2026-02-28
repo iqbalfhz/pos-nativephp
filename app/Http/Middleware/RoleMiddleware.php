@@ -12,7 +12,23 @@ class RoleMiddleware
     {
         $user = $request->user();
 
-        if (! $user || ! $user->hasRole($roles)) {
+        if (!$user) {
+            abort(403);
+        }
+
+        // Parse roles string (supports "role1|role2" format)
+        $roleArray = explode('|', $roles);
+
+        // Check if user has any of the roles
+        $hasRole = false;
+        foreach ($roleArray as $role) {
+            if ($user->hasRole(trim($role))) {
+                $hasRole = true;
+                break;
+            }
+        }
+
+        if (!$hasRole) {
             abort(403);
         }
 

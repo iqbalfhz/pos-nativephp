@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -20,11 +19,7 @@ class UserSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
-
-        $superAdminRole = Role::where('name', 'Super Admin')->first();
-        if ($superAdminRole) {
-            $superAdmin->roles()->syncWithoutDetaching([$superAdminRole->id]);
-        }
+        $superAdmin->assignRole('Super Admin');
 
         // Admin User
         $admin = User::firstOrCreate(
@@ -35,11 +30,7 @@ class UserSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
-
-        $adminRole = Role::where('name', 'Admin')->first();
-        if ($adminRole) {
-            $admin->roles()->syncWithoutDetaching([$adminRole->id]);
-        }
+        $admin->assignRole('Admin');
 
         // Cashier 1
         $cashier1 = User::firstOrCreate(
@@ -50,11 +41,7 @@ class UserSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
-
-        $cashierRole = Role::where('name', 'Cashier')->first();
-        if ($cashierRole) {
-            $cashier1->roles()->syncWithoutDetaching([$cashierRole->id]);
-        }
+        $cashier1->assignRole('Cashier');
 
         // Cashier 2
         $cashier2 = User::firstOrCreate(
@@ -65,10 +52,7 @@ class UserSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
-
-        if ($cashierRole) {
-            $cashier2->roles()->syncWithoutDetaching([$cashierRole->id]);
-        }
+        $cashier2->assignRole('Cashier');
 
         // Cashier 3
         $cashier3 = User::firstOrCreate(
@@ -79,10 +63,8 @@ class UserSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
-
-        if ($cashierRole) {
-            $cashier3->roles()->syncWithoutDetaching([$cashierRole->id]);
-        }
+        $cashier3->assignRole('Cashier');
     }
 }
+
 

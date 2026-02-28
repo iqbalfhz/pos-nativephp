@@ -29,10 +29,19 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+        
+        // Get all permissions for the authenticated user using Spatie
+        $permissions = [];
+        if ($user) {
+            $permissions = $user->getAllPermissions()->pluck('name')->toArray();
+        }
+
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user,
+                'permissions' => $permissions,
             ],
         ];
     }
